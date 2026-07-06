@@ -1,0 +1,18 @@
+# PXXL deployment config - frontend-only
+# This file instructs PXXL to build the frontend folder and publish `dist`.
+# If your PXXL dashboard uses a different filename or schema, adapt accordingly.
+
+project: plutoboost-frontend
+context: frontend
+runtime: node
+build:
+  install: npm ci
+  build: npm run build
+publish: dist
+env:
+  VITE_API_BASE_URL: "https://plutoboost.pxxl.run/"
+
+# If PXXL supports Docker, you can instead point to frontend/Dockerfile.
+# docker:
+#   dockerfile: frontend/Dockerfile
+#   expose: 80
