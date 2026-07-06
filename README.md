@@ -186,3 +186,43 @@ If you'd like, I can:
 - Generate a `systemd` service unit for your backend.
 - Create a small deployment script that builds the Docker image and restarts the container on the server.
 - Create an AWS/GCP-style startup script for your PXXL host.
+
+## Frontend Hosting
+
+If your frontend is hosted separately from the backend, deploy only the frontend static app.
+
+### Recommended frontend options
+
+- Netlify / Vercel: easiest for React/Vite static sites.
+- AWS S3 + CloudFront: good for low cost and global delivery.
+- PXXL static: if your provider supports static site hosting.
+
+### Deploy the frontend
+
+1. Build the frontend:
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+2. Deploy the `frontend/dist` folder to your static host.
+
+3. Confirm the backend URL in `frontend/.env`:
+
+```dotenv
+VITE_API_BASE_URL=https://plutoboost.pxxl.run/
+```
+
+4. If your provider uses Docker, deploy `frontend/Dockerfile`.
+
+### Quick checks
+
+- The frontend should load in the browser.
+- API calls should go to `https://plutoboost.pxxl.run/`.
+- If you see a CORS error, update the backend `FRONTEND_URL` and backend CORS origin.
+
+### If you need provider-specific help
+
+Tell me your static host name and I’ll give exact setup steps for Netlify, Vercel, AWS, or PXXL static hosting.
