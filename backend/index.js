@@ -9,6 +9,8 @@ import passport from 'passport';
 import session from 'express-session';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
 import User from './models/User.js';
 import bcrypt from 'bcrypt';
 import Order from './models/Order.js';
@@ -364,6 +366,19 @@ app.get('/user/orders', authenticateToken, async (req, res) => {
 // The admin router will handle its own internal authentication,
 // keeping the login route public and protecting all others.
 app.use('/api/admin', adminRoutes);
+
+// Serve frontend build if available
+const frontendDistPath = path.join(process.cwd(), 'frontend', 'dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
 
 app.get('/api/blog/posts', async (req, res) => {
   try {
