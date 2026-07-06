@@ -21,7 +21,7 @@ import Register from './pages/Register';
 import AdminLogin from './pages/AdminLogin';
 
 // User Dashboard Pages
-import AdminDashboard from './pages/admin';
+import AdminDashboard from './pages/Admin';
 import AddFunds from "./pages/AddFunds";
 import Orders from "./pages/Orders.jsx";
 import Dashboard2 from "./pages/Dashboard";
