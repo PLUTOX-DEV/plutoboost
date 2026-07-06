@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "frontend/dist" }
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/backend/index.js" },
+    { "src": "/(.*)", "dest": "/frontend/$1" }
+  ],
+  "crons": [
+    { "path": "/api/cron/check-balance", "schedule": "0 * * * *" },
+    { "path": "/api/cron/update-orders", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/daily-report", "schedule": "0 0 * * *" }
+  ]
+}
