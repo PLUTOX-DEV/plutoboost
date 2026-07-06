@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  backend:
+    build: .
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      # Use an env_file or set these in your hosting control panel
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+    env_file:
+      - .env

@@ -138,3 +138,51 @@ Use these ignore rules in your repository root and `backend/.gitignore`:
 - editor and system files such as `.DS_Store`, `.vscode/`, `npm-debug.log*`, and `yarn-error.log*`
 
 The root `.gitignore` included with this project already covers these patterns.
+
+## PXXL Hosting (VPS / Custom Host)
+
+If you are deploying to a VPS provider such as PXXL Hosting, you can run the backend as a Docker container or as a system service. The repository includes convenient templates in the `backend/` folder to help you deploy quickly:
+
+- `backend/Dockerfile` — production image for the backend.
+- `backend/docker-compose.yml` — example compose file that reads environment variables from `backend/.env`.
+- `backend/ecosystem.config.js` — `pm2` ecosystem file if you prefer running with PM2.
+- `backend/nginx.pluto.conf` — sample Nginx reverse-proxy configuration.
+
+Quick deploy options:
+
+1) Docker (recommended for isolated deploys)
+
+```bash
+# Build the backend image
+cd backend
+docker build -t plutoboost-backend:latest .
+
+# Run with environment variables from your .env file
+docker run -d --name plutoboost-backend --env-file .env -p 5000:5000 plutoboost-backend:latest
+```
+
+2) Docker Compose (development or single-host production)
+
+```bash
+cd backend
+docker-compose up -d --build
+```
+
+3) Traditional VPS (systemd + Nginx)
+
+- Copy the repo to the server (e.g., `/var/www/plutoboost`).
+- Install Node.js and `pm2`.
+- Install and configure Nginx using `backend/nginx.pluto.conf`.
+- Use `pm2 start backend/ecosystem.config.js --env production` to run the app.
+
+Environment & Security
+
+- Never commit `.env` to source control — keep secrets in your host's environment manager.
+- Ensure `MONGODB_URI`, `JWT_SECRET`, `SMTP_USER`, `SMTP_PASS`, `EXO_API_KEY`, and `PAYSTACK_SECRET_KEY` are set on the host.
+- For HTTPS, use Certbot to obtain an SSL certificate and update the Nginx config to listen on 443.
+
+If you'd like, I can:
+
+- Generate a `systemd` service unit for your backend.
+- Create a small deployment script that builds the Docker image and restarts the container on the server.
+- Create an AWS/GCP-style startup script for your PXXL host.

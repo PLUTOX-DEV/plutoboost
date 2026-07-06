@@ -754,17 +754,25 @@ mongoose.connect(process.env.MONGODB_URI, {
   socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
 }).then(() => {
   console.log('MongoDB connected successfully.');
-  // For local development, we still listen on a port.
-  // Vercel will ignore this and use the exported 'app' instead.
-  if (process.env.NODE_ENV !== 'production') {
-    app.listen(5000, () => {
-      console.log('Backend running on http://localhost:5000');
-      // We don't start the watchdog locally anymore as it's handled by cron endpoints.
+
+  // Start the HTTP server unless running on Vercel (serverless)
+  // Use `PORT` env var when provided (Elastic Beanstalk / Docker / PXXL)
+  const PORT = process.env.PORT || 5000;
+  if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+      console.log(`Backend running on http://0.0.0.0:${PORT}`);
     });
+  } else {
+    console.log('Detected Vercel environment; skipping explicit app.listen().');
   }
 }).catch(err => {
   console.error('MongoDB connection error:', err);
   process.exit(1); // Exit if we can't connect to the DB
+});
+
+// Lightweight health endpoint for uptime / readiness checks
+app.get('/health', (req, res) => {
+  res.json({ ok: true, uptime: process.uptime(), timestamp: Date.now() });
 });
 
 // Export the app for Vercel
