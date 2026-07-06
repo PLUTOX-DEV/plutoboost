@@ -6,9 +6,9 @@ project: plutoboost-frontend
 # Use Docker mode so the runtime image contains the static site under /usr/share/nginx/html
 # and the runtime does not attempt to `cd /workspace/app/frontend`.
 docker:
-  # Path is relative to repo root; PXXL will build this Dockerfile.
-  dockerfile: frontend/Dockerfile
-  context: .
+  # Build from the `frontend/` folder so the runtime image contains the built site.
+  dockerfile: Dockerfile
+  context: frontend
   expose: 80
 
 env:
