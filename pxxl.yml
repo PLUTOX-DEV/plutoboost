@@ -3,16 +3,13 @@
 # If your PXXL dashboard uses a different filename or schema, adapt accordingly.
 
 project: plutoboost-frontend
-context: frontend
-runtime: node
-build:
-  install: npm ci
-  build: npm run build
-publish: dist
-env:
-  VITE_API_BASE_URL: "https://plutoboost.pxxl.run/"
+# Use Docker mode so the runtime image contains the static site under /usr/share/nginx/html
+# and the runtime does not attempt to `cd /workspace/app/frontend`.
+docker:
+  # Path is relative to repo root; PXXL will build this Dockerfile.
+  dockerfile: frontend/Dockerfile
+  context: .
+  expose: 80
 
-# If PXXL supports Docker, you can instead point to frontend/Dockerfile.
-# docker:
-#   dockerfile: frontend/Dockerfile
-#   expose: 80
+env:
+  VITE_API_BASE_URL: "https://plutoboostx.pxxl.run/"
