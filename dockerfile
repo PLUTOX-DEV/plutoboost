@@ -20,8 +20,8 @@ COPY backend/package*.json backend/
 RUN cd backend && npm ci --production
 COPY backend/ backend/
 
-# Copy the built frontend from the 'builder' stage into a 'dist' folder inside the backend
-COPY --from=builder /workspace/app/frontend/dist backend/frontend/dist
+# Copy the built frontend from the 'builder' stage into the correct 'dist' folder inside the backend
+COPY --from=builder /workspace/app/frontend/dist backend/dist
 
 WORKDIR /workspace/app/backend
 ENV NODE_ENV=production

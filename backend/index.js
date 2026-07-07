@@ -367,16 +367,15 @@ app.get('/user/orders', authenticateToken, async (req, res) => {
 // keeping the login route public and protecting all others.
 app.use('/api/admin', adminRoutes);
 
-// --- Serve Frontend ---
-// This section serves the static files from the React build
-const __dirname = path.dirname(new URL(import.meta.url).pathname.substring(1));
-const frontendDistPath = path.join(__dirname, 'dist');
+// --- Serve Frontend Statically ---
+// This is the correct way to serve a React app from a Node.js backend
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const frontendDistPath = path.resolve(__dirname, 'dist');
+
 app.use(express.static(frontendDistPath));
 
-// For any route that is not an API route, serve the index.html file.
-// This is crucial for single-page applications like React.
 app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendDistPath, 'index.html'));
+  res.sendFile(path.resolve(frontendDistPath, 'index.html'));
 });
 
 app.get('/api/blog/posts', async (req, res) => {
