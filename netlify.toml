@@ -1,11 +1,11 @@
 [build]
   base = "frontend"
-  publish = "frontend/dist"
-  command = "npm ci --prefix frontend && npm run build --prefix frontend"
+  publish = "dist"
+  command = "npm ci && npm run build"
 
 [build.environment]
   VITE_API_BASE_URL = "https://plutoboost.pxxl.run/"
 
 [dev]
-  command = "npm run dev --prefix frontend"
+  command = "npm run dev"
   port = 5173
