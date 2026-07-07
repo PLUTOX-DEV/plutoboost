@@ -62,9 +62,10 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, orderDetails, loading }
               onClick={onConfirm}
               disabled={loading}
               className="btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
+              aria-busy={loading}
             >
               {loading ? <RefreshCw size={16} className="animate-spin" /> : <Check size={16} />}
-              {loading ? "Processing..." : "Confirm Order"}
+              {!loading && "Confirm Order"}
             </button>
           </div>
         </motion.div>

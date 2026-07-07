@@ -20,6 +20,7 @@ import {
   Star,
   ArrowUpRight,
   Music,
+  RefreshCw,
 } from "lucide-react";
 
 const fadeInUp = {
@@ -368,8 +369,9 @@ export default function Dashboard() {
               onClick={openConfirmationModal}
               disabled={isLoading || !selectedService}
               className="btn-primary w-full mt-4 flex items-center justify-center gap-2 disabled:opacity-50"
+              aria-busy={isLoading}
             >
-              {isLoading ? 'Placing Order...' : 'Place Order'}
+              {isLoading ? <RefreshCw size={18} className="animate-spin" /> : 'Place Order'}
               <ArrowUpRight size={16} />
             </button>
           </div>

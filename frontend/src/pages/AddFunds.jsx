@@ -32,7 +32,7 @@ export default function AddFunds() {
   const [method, setMethod] = useState("card");
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '' });
-  const [depositFee, setDepositFee] = useState(2.5); // Default fee percentage
+  const [depositFee, setDepositFee] = useState(2.9); // Default fee percentage
 
   const finalAmount = customAmount ? Number(customAmount) : amount;
   const feeAmount = finalAmount * (depositFee / 100);

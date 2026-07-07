@@ -15,6 +15,13 @@ const {
   ADMIN_EMAIL
 } = process.env;
 
+// Support multiple admin recipients via ADMIN_EMAILS (comma-separated) or single ADMIN_EMAIL
+const ADMIN_RECIPIENTS = (process.env.ADMIN_EMAILS || ADMIN_EMAIL || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean)
+  .join(',');
+
 let isAlertSent = false; // Flag to prevent sending multiple alerts
 
 export async function checkBalanceAndNotify() {
@@ -42,7 +49,8 @@ export async function checkBalanceAndNotify() {
             <p>The threshold is set to ${response.data.currency} ${threshold}.</p>
             <p>Please add funds to your provider account to avoid service interruptions.</p>
           `;
-          await sendEmail(ADMIN_EMAIL, subject, html);
+          // Send to all configured admin recipients
+          await sendEmail(ADMIN_RECIPIENTS || ADMIN_EMAIL, subject, html);
           isAlertSent = true; // Set flag to true after sending
         } else {
           await createLog('info', 'Low balance alert already sent. Skipping.', 'watchdog');
@@ -88,7 +96,7 @@ export async function sendDailyReport() {
       <p>Have a great day!</p>
     `;
 
-    await sendEmail(ADMIN_EMAIL, subject, html);
+    await sendEmail(ADMIN_RECIPIENTS || ADMIN_EMAIL, subject, html);
   } catch (err) {
     await createLog('error', `Failed to send daily report: ${err.message}`, 'watchdog');
   }

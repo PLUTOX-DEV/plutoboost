@@ -2,16 +2,17 @@
 import React, { useEffect, useContext } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import UserContext from './context/UserContext';
+import LoadingSpinner from './components/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useContext(UserContext);
-  if (loading) return <div>Loading...</div>; // Or a spinner
+  if (loading) return <LoadingSpinner text="" />;
   return user && user.role !== 'admin' ? children : <Navigate to="/login" />;
 }
 
 function AdminProtectedRoute({ children }) {
   const { user, loading } = useContext(UserContext);
-  if (loading) return <div>Loading...</div>; // Or a spinner
+  if (loading) return <LoadingSpinner text="" />;
   return user && user.role === 'admin' ? children : <Navigate to="/admin-login" />;
 }
 // Core Pages

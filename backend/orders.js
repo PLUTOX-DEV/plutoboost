@@ -140,6 +140,22 @@ router.post('/', auth, async (req, res) => {
       transaction.description = `Order for ${savedOrder.serviceType} #${savedOrder._id}`;
       await transaction.save({ session });
 
+      // Immediately attempt to fetch current status from provider for near-real-time sync
+      try {
+        const statusResp = await axios.post(process.env.EXOBOOSTER_API_URL, {
+          key: process.env.EXO_API_KEY,
+          action: 'status',
+          orders: providerOrderId
+        }, { timeout: 10000 });
+        const remoteStatus = statusResp.data && statusResp.data[providerOrderId] && statusResp.data[providerOrderId].status;
+        if (remoteStatus) {
+          savedOrder.status = remoteStatus;
+          await savedOrder.save({ session });
+        }
+      } catch (statusErr) {
+        console.warn('Immediate status check failed for provider order:', providerOrderId, statusErr.message || statusErr);
+      }
+
       return { order: savedOrder, newBalance: user.balance };
     });
 

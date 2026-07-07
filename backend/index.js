@@ -24,6 +24,19 @@ import { sendEmail } from './mailer.js';
 import adminRoutes from './adminRoutes.js';
 dotenv.config();
 
+// Derive a single callback/frontend URL from env variables.
+// Accept either FRONTEND_URLS (comma-separated) or FRONTEND_URL and
+// always use the first valid entry. This prevents malformed values like
+// "https://site.netlify.app,http//localhost:5173" from being used.
+const _frontendEnv = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173';
+let CALLBACK_FRONTEND_URL = String(_frontendEnv).split(',')[0].trim();
+if (!/^https?:\/\//i.test(CALLBACK_FRONTEND_URL)) {
+  // fallback to http://localhost:5173 if the first entry is invalid
+  CALLBACK_FRONTEND_URL = 'http://localhost:5173';
+}
+CALLBACK_FRONTEND_URL = CALLBACK_FRONTEND_URL.replace(/\/$/, '');
+console.log('Using callback frontend URL:', CALLBACK_FRONTEND_URL);
+
 // Startup validation for essential environment variables
 if (!process.env.EXOBOOSTER_API_URL || !process.env.EXO_API_KEY) {
   console.error("FATAL ERROR: Missing EXOBOOSTER_API_URL or EXO_API_KEY in .env file.");
@@ -676,7 +689,8 @@ app.post('/paystack/initialize', authenticateToken, async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+  // Use the sanitized, single callback URL we derived at startup
+  const frontendUrl = CALLBACK_FRONTEND_URL;
 
   try {
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
@@ -711,7 +725,7 @@ app.post('/paystack/verify', authenticateToken, async (req, res) => {
     const { status, amount, metadata } = response.data.data;
 
     if (status === 'success' && metadata.userId === req.user.id) {
-      const DEPOSIT_FEE_PERCENTAGE = process.env.DEPOSIT_FEE_PERCENTAGE || 2.5;
+      const DEPOSIT_FEE_PERCENTAGE = process.env.DEPOSIT_FEE_PERCENTAGE || 2.9;
       const depositedAmount = amount / 100;
       const fee = depositedAmount * (DEPOSIT_FEE_PERCENTAGE / 100);
       const finalAmount = depositedAmount - fee;
@@ -781,7 +795,7 @@ app.post('/paystack/webhook', express.raw({ type: 'application/json' }), async (
         return;
       }
 
-      const DEPOSIT_FEE_PERCENTAGE = process.env.DEPOSIT_FEE_PERCENTAGE || 2.5;
+      const DEPOSIT_FEE_PERCENTAGE = process.env.DEPOSIT_FEE_PERCENTAGE || 2.9;
       const depositedAmount = amount / 100;
       const fee = depositedAmount * (DEPOSIT_FEE_PERCENTAGE / 100);
       const finalAmount = depositedAmount - fee;

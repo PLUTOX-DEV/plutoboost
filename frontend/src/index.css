@@ -108,6 +108,18 @@
   animation: gradientShift 8s ease infinite;
 }
 
+/* Lightweight background fade for dashboard to avoid heavy GPU work */
+.dashboard-bg-fade {
+  background: radial-gradient(circle at 20% 10%, rgba(124,58,237,0.18), transparent 45%),
+              radial-gradient(circle at 80% 30%, rgba(99,102,241,0.14), transparent 50%);
+  opacity: 0.35;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  will-change: opacity;
+  transform: translateZ(0);
+  filter: none;
+}
+
 @media (max-width: 768px) {
   .animated-gradient {
     animation: none;
@@ -165,6 +177,14 @@
 
 @keyframes shimmer {
   100% { left: 100%; }
+}
+
+/* Respect user's reduced motion preference and provide fallback for glitchy browsers */
+@media (prefers-reduced-motion: reduce) {
+  .animated-gradient, .pulse-glow, .float, .shimmer::after {
+    animation: none !important;
+  }
+  .card-hover:hover { transform: none !important; box-shadow: none !important; }
 }
 
 /* ===== CARD HOVER EFFECTS ===== */
