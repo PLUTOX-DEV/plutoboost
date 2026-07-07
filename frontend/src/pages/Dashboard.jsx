@@ -230,127 +230,143 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* STATS ROW */}
-        <motion.div 
+        {/* QUICK STATS */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 gap-3 sm:gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5"
         >
           <StatCard icon={Wallet} label="Balance" value={`₦${balance.toLocaleString()}`} color="purple" />
           <StatCard icon={ShoppingCart} label="Orders" value={userStats.totalOrders.toString()} color="indigo" />
+          <StatCard icon={Zap} label="Platforms" value={`${platforms.length} available`} color="emerald" />
         </motion.div>
 
-        {/* ORDER FORM */}
+        {/* ORDER GRID */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
+          className="grid grid-cols-1 xl:grid-cols-[2.5fr_1fr] gap-6"
         >
-          <div className="lg:col-span-2 glass card-hover rounded-2xl p-4 sm:p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
-                  <ShoppingCart size={18} className="text-purple-400" />
+          <div className="glass card-hover rounded-2xl p-4 sm:p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
+                  <ShoppingCart size={20} className="text-purple-400" />
                 </div>
-                New Order
-              </h2>
-              <span className="text-xs text-gray-400 flex items-center gap-1">
-                <Star size={12} className="text-yellow-400" /> Premium
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-semibold">Create New Boost</h2>
+                  <p className="text-sm text-gray-400">Choose the best service, set quantity, and launch.</p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-300">
+                <Star size={14} className="text-amber-400" /> Premium Options
               </span>
             </div>
 
             {/* PLATFORM SELECT */}
-            <div>
-              <label className="text-sm text-gray-400 mb-2 block">Select Platform</label>
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-white">Select Platform</label>
+                <span className="text-xs text-gray-400">Tap to choose</span>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                 {platforms.map((p) => (
                   <button
                     key={p.name}
                     onClick={() => setSelectedPlatform(p)}
-                    className={`flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border transition-all duration-300
-                    ${selectedPlatform && selectedPlatform.name === p.name
-                      ? `${p.bg} border-current ${p.color} shadow-glow-sm`
-                      : "bg-black/40 border-white/10 text-gray-400 hover:border-white/20"
+                    className={`group flex flex-col items-center gap-2 rounded-2xl border px-3 py-3 text-sm transition-all duration-300 ${
+                      selectedPlatform && selectedPlatform.name === p.name
+                        ? `${p.bg} border-current ${p.color} shadow-glow-sm`
+                        : "bg-black/30 border-white/10 text-gray-300 hover:border-white/20"
                     }`}
                   >
-                    <p.icon size={20} />
-                    <span className="text-xs sm:text-sm">{p.name}</span>
+                    <p.icon size={20} className={selectedPlatform && selectedPlatform.name === p.name ? p.color : 'text-gray-300'} />
+                    <span className="text-xs sm:text-sm font-medium">{p.name}</span>
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
 
             {/* SERVICE TYPE */}
-            <div>
-              <label className="text-sm text-gray-400 mb-2 block">Service Type</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3">
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-white">Service Type</label>
+                <span className="text-xs text-gray-400">{visibleServices.length} options</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {serviceError ? (
-                  <div className="col-span-full text-center text-red-400 py-4 bg-red-500/10 rounded-lg">{serviceError}</div>
-                ) : (
-                  visibleServices.length > 0 ? visibleServices.map((s) => (
+                  <div className="col-span-full rounded-2xl bg-red-500/10 p-4 text-center text-red-300">{serviceError}</div>
+                ) : visibleServices.length > 0 ? (
+                  visibleServices.map((s) => (
                     <button
                       key={s.name}
                       onClick={() => setSelectedService(s)}
-                      className={`text-left flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border transition-all duration-300 hover:border-purple-500/50
-                      ${selectedService && selectedService.name === s.name
-                        ? "bg-purple-600/20 border-purple-500 text-purple-300"
-                        : "bg-black/40 border-white/10 text-gray-400 hover:border-white/20"
+                      className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition-all duration-300 hover:scale-[1.01] ${
+                        selectedService && selectedService.name === s.name
+                          ? 'bg-purple-600/20 border-purple-500 text-purple-200 shadow-glow-sm'
+                          : 'bg-black/30 border-white/10 text-gray-300 hover:border-white/20'
                       }`}
                     >
-                      <s.icon size={16} />
-                      <span className="text-xs sm:text-sm flex-1">{s.name}</span>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5">
+                        <s.icon size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{s.name}</p>
+                      </div>
                     </button>
-                  )) : (
-                    <div className="col-span-full text-center text-gray-400 py-4">No services available for this platform</div>
-                  )
+                  ))
+                ) : (
+                  <div className="col-span-full rounded-2xl bg-white/5 p-4 text-center text-gray-400">No services available for this platform.</div>
                 )}
               </div>
-            </div>
+            </section>
 
-            {/* LINK INPUT */}
-            <div>
-              <label className="text-sm text-gray-400 mb-2 block">Post / Profile Link</label>
-              <input
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-                placeholder={linkPlaceholder}
-                className="input-glass"
-              />
-            </div>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-white">Post / Profile Link</label>
+                <input
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                  placeholder={linkPlaceholder}
+                  className="input-glass"
+                />
+              </div>
 
-            {/* QUANTITY INPUT */}
-            <div>
-              <label className="text-sm text-gray-400 mb-2 block">Quantity</label>
-              <input
-                type="number"
-                value={qty}
-                onChange={(e) => setQty(Number(e.target.value))}
-                className="input-glass"
-                placeholder="Enter desired quantity"
-              />
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-white">Quantity</label>
+                <input
+                  type="number"
+                  value={qty}
+                  onChange={(e) => setQty(Number(e.target.value))}
+                  className="input-glass"
+                  placeholder="Enter quantity"
+                />
+              </div>
             </div>
           </div>
 
-          {/* SUMMARY PANELS */}
-          <div className="glass card-hover rounded-2xl p-4 sm:p-6 flex flex-col">
-            <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
-            <div className="space-y-3 flex-1">
-              <SummaryRow label="Platform" value={selectedPlatform ? selectedPlatform.name : "Loading..."} icon={selectedPlatform?.icon} />
-              <SummaryRow label="Service" value={selectedService ? selectedService.name : "..."} icon={selectedService?.icon} />
-              <SummaryRow label="Quantity" value={qty.toLocaleString()} />
-              <div className="border-t border-white/10 pt-3 mt-3">
-                <SummaryRow label="Total Cost" value={`₦${Number(total).toLocaleString()}`} highlight />
+          {/* SUMMARY PANEL */}
+          <div className="glass card-hover rounded-2xl p-4 sm:p-6 flex flex-col justify-between gap-6">
+            <div>
+              <h2 className="text-lg font-semibold mb-3">Order Summary</h2>
+              <div className="space-y-4">
+                <SummaryRow label="Platform" value={selectedPlatform ? selectedPlatform.name : 'None selected'} icon={selectedPlatform?.icon} />
+                <SummaryRow label="Service" value={selectedService ? selectedService.name : 'Select a service'} icon={selectedService?.icon} />
+                <SummaryRow label="Quantity" value={qty.toLocaleString()} />
+                <div className="border-t border-white/10 pt-4">
+                  <SummaryRow label="Total Cost" value={`₦${Number(total).toLocaleString()}`} highlight />
+                </div>
               </div>
             </div>
 
             <button
               onClick={openConfirmationModal}
               disabled={isLoading || !selectedService}
-              className="btn-primary w-full mt-6 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="btn-primary w-full mt-4 flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {isLoading ? "Placing Order..." : "Place Order"}
+              {isLoading ? 'Placing Order...' : 'Place Order'}
               <ArrowUpRight size={16} />
             </button>
           </div>
@@ -389,19 +405,22 @@ export default function Dashboard() {
 }
 
 /* Helper Cards and Components placed safely down here */
-function StatCard({ icon: Icon, label, value, trend, color }) {
+function StatCard({ icon: Icon, label, value, color }) {
   const colors = {
     purple: "from-purple-500/20 to-purple-600/10 border-purple-500/30",
-    indigo: "from-indigo-500/20 to-indigo-600/10 border-indigo-500/30"
+    indigo: "from-indigo-500/20 to-indigo-600/10 border-indigo-500/30",
+    emerald: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30"
   };
   return (
-    <div className={`relative overflow-hidden rounded-xl p-4 bg-gradient-to-br ${colors[color]} border backdrop-blur-sm`}>
-      <div className="flex items-start justify-between">
+    <div className={`relative overflow-hidden rounded-3xl border ${colors[color]} bg-gradient-to-br p-5 shadow-glow-sm`}> 
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs text-gray-400">{label}</p>
-          <p className="text-lg font-bold mt-1">{value}</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-gray-400">{label}</p>
+          <p className="text-2xl font-semibold text-white mt-2">{value}</p>
         </div>
-        <div className="p-2 rounded-lg bg-black/20 text-white"><Icon size={18} /></div>
+        <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-white/10 text-white">
+          <Icon size={20} />
+        </div>
       </div>
     </div>
   );
@@ -409,9 +428,11 @@ function StatCard({ icon: Icon, label, value, trend, color }) {
 
 function SummaryRow({ label, value, highlight, icon: Icon }) {
   return (
-    <div className="flex justify-between items-center text-sm">
-      <span className="text-gray-400 flex items-center gap-2">{Icon && <Icon size={14} />}{label}</span>
-      <span className={highlight ? "text-purple-400 font-bold text-lg" : "font-medium"}>{value}</span>
+    <div className="flex items-center justify-between gap-4 text-sm text-gray-200">
+      <span className="flex items-center gap-2 text-gray-400">
+        {Icon && <Icon size={14} />} {label}
+      </span>
+      <span className={highlight ? "text-purple-300 font-semibold text-lg" : "font-medium text-white"}>{value}</span>
     </div>
   );
 }
@@ -419,9 +440,9 @@ function SummaryRow({ label, value, highlight, icon: Icon }) {
 function OrderRow({ platform, service, qty, status }) {
   const statusStyles = { Completed: "badge-success", Pending: "badge-warning", Processing: "badge-info", Failed: "badge-error" };
   return (
-    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-black/30 border border-white/5 rounded-xl p-4 hover:border-white/10 transition">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 rounded-3xl border border-white/10 bg-black/20 p-4 hover:border-white/20 transition duration-200">
       <div>
-        <p className="font-medium text-sm">{platform} • {service}</p>
+        <p className="font-semibold text-white">{platform} • {service}</p>
         <p className="text-xs text-gray-400">{qty} units</p>
       </div>
       <span className={statusStyles[status] || "badge-warning"}>{status}</span>
