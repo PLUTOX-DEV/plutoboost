@@ -195,10 +195,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen flex text-white">
+    <div className="dashboard-page min-h-screen flex text-white">
       <Sidebar />
 
       <main className="flex-1 px-4 sm:px-6 lg:px-10 xl:px-12 2xl:px-16 py-6 lg:py-8 space-y-6 lg:space-y-10 lg:ml-72 xl:ml-80 2xl:ml-96 overflow-x-hidden">
+        {/* BACKGROUND FADE */}
+        <div className="absolute inset-0 pointer-events-none dashboard-bg-fade" />
+
         {/* HEADER */}
         <motion.div {...fadeInUp} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

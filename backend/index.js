@@ -676,11 +676,13 @@ app.post('/paystack/initialize', authenticateToken, async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+
   try {
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email: user.email,
       amount: amount * 100, // Convert to kobo
-      callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/wallet`,
+      callback_url: `${frontendUrl}/wallet`,
       metadata: { userId: user._id }
     }, {
       headers: {

@@ -125,8 +125,8 @@ export default function Wallet() {
   };
 
   useEffect(() => {
-    // This effect ONLY handles the Paystack verification redirect.
-    const reference = searchParams.get('reference');
+    // This effect handles Paystack verification redirect parameters.
+    const reference = searchParams.get('reference') || searchParams.get('trxref');
     if (reference) {
       const verifyPayment = async () => {
         setNotification({ show: true, message: 'Verifying payment...' });
