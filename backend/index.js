@@ -367,18 +367,17 @@ app.get('/user/orders', authenticateToken, async (req, res) => {
 // keeping the login route public and protecting all others.
 app.use('/api/admin', adminRoutes);
 
-// Serve frontend build if available
-const frontendDistPath = path.join(process.cwd(), 'frontend', 'dist');
-if (fs.existsSync(frontendDistPath)) {
-  app.use(express.static(frontendDistPath));
+// --- Serve Frontend ---
+// This section serves the static files from the React build
+const __dirname = path.dirname(new URL(import.meta.url).pathname.substring(1));
+const frontendDistPath = path.join(__dirname, 'dist');
+app.use(express.static(frontendDistPath));
 
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
-      return next();
-    }
-    res.sendFile(path.join(frontendDistPath, 'index.html'));
-  });
-}
+// For any route that is not an API route, serve the index.html file.
+// This is crucial for single-page applications like React.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
 
 app.get('/api/blog/posts', async (req, res) => {
   try {

@@ -7,7 +7,7 @@
     "install:frontend": "npm install --prefix frontend",
     "install": "npm run install:backend && npm run install:frontend",
     "build": "npm run build --prefix frontend",
-    "start": "npm start --prefix backend"
+    "start": "node backend/index.js"
   },
   "engines": {
     "node": ">=18.0.0"
