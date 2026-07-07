@@ -54,17 +54,28 @@ const app = express();
 // CORS: allow one or more frontend origins configured via env
 // Set `FRONTEND_URLS` to a comma-separated list (e.g. "http://localhost:5173,https://your-site.netlify.app").
 const rawOrigins = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173,https://plutoboost.netlify.app';
-const allowedOrigins = rawOrigins.split(',').map(s => s.trim()).filter(Boolean);
+const allowedOrigins = rawOrigins
+  .split(',')
+  .map(s => s.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 console.log('CORS allowed origins:', allowedOrigins);
-app.use(cors({
+const corsOptions = {
   origin: function(origin, callback) {
-    // allow requests with no origin (server-to-server, curl, mobile apps)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('CORS policy: origin not allowed'));
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, normalizedOrigin);
+    }
+    const err = new Error(`CORS policy: origin ${origin} is not allowed`);
+    err.status = 403;
+    return callback(err, false);
   },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
-}));
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(helmet()); // Adds important security headers
 app.use(session({

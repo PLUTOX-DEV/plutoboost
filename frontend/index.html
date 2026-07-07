@@ -34,6 +34,31 @@
   <div id="root"></div>
   <!-- Local Paystack button CSS to avoid cross-origin blocking -->
   <link rel="stylesheet" href="/paystack-button.min.css">
+  <!-- Override any Paystack CSS fetch to use local copy (prevents blocked cross-origin fetch) -->
+  <script>
+    (function(){
+      // If the Paystack script creates a <link href="https://paystack.com/public/css/button.min.css">,
+      // rewrite that href to our local copy.
+      const createElement = Document.prototype.createElement;
+      Document.prototype.createElement = function(tagName){
+        const el = createElement.call(this, tagName);
+        if(tagName && tagName.toLowerCase()==='link'){
+          const setHref = Object.getOwnPropertyDescriptor(HTMLLinkElement.prototype, 'href')?.set;
+          if(setHref){
+            Object.defineProperty(el, 'href', {
+              set(value){
+                if(typeof value === 'string' && value.includes('paystack.com/public/css/button.min.css')){
+                  value = '/paystack-button.min.css';
+                }
+                return setHref.call(this, value);
+              }
+            });
+          }
+        }
+        return el;
+      };
+    })();
+  </script>
   <script src="https://js.paystack.co/v1/inline.js"></script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
