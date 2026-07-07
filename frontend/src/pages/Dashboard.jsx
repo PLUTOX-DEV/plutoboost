@@ -30,50 +30,6 @@ const fadeInUp = {
 };
 
 export default function Dashboard() {
-  // Load Tailwind CDN for this page only and inject safer overrides for mobile GPU bugs
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && !window.__TAILWIND_DASHBOARD_LOADED__) {
-        // Optional minimal Tailwind config can be set before loading the script
-        window.tailwind = window.tailwind || {};
-        // Keep default corePlugins but ensure preflight is enabled
-        window.tailwind.config = window.tailwind.config || {};
-
-        const script = document.createElement('script');
-        script.src = 'https://cdn.tailwindcss.com';
-        script.async = true;
-        script.onload = () => {
-          window.__TAILWIND_DASHBOARD_LOADED__ = true;
-          console.log('Tailwind CDN loaded for Dashboard');
-        };
-        document.head.appendChild(script);
-
-        // Inject dashboard-specific safe overrides to avoid heavy GPU use
-        const styleId = 'dashboard-tailwind-overrides';
-        if (!document.getElementById(styleId)) {
-          const style = document.createElement('style');
-          style.id = styleId;
-          style.innerHTML = `
-            .dashboard-page .glass, .dashboard-page .glass-dark, .dashboard-page .glass-light {
-              backdrop-filter: none !important;
-              -webkit-backdrop-filter: none !important;
-              box-shadow: 0 6px 14px rgba(0,0,0,0.12) !important;
-              background: rgba(0,0,0,0.06) !important;
-              border: 1px solid rgba(255,255,255,0.06) !important;
-            }
-            .dashboard-page .dashboard-bg-fade { display: none !important; }
-            .dashboard-page .gradient-text, .dashboard-page .gradient-text-gold {
-              background: none !important; -webkit-text-fill-color: initial !important; color: white !important;
-            }
-          `;
-          document.head.appendChild(style);
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to load Tailwind CDN for dashboard:', e);
-    }
-  }, []);
-
   const { balance, setBalance, placeOrder } = useContext(UserContext);
   const [allServices, setAllServices] = useState([]); 
   const [platforms, setPlatforms] = useState([]);
