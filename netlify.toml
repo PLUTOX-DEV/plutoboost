@@ -4,7 +4,7 @@
   command = "npm ci && npm run build"
 
 [build.environment]
-  VITE_API_BASE_URL = "https://plutoboost.pxxl.run/"
+  VITE_API_BASE_URL = "https://plutoboost.onrender.com"
 
 [dev]
   command = "npm run dev"
