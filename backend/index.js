@@ -822,4 +822,22 @@ app.get('/health', (req, res) => {
 });
 
 // Export the app for Vercel
+// Error handler: log full stack traces so runtime logs contain useful details
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err && err.stack ? err.stack : err);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Global process handlers to capture crashes/rejections in runtime logs
+process.on('unhandledRejection', (reason, p) => {
+  console.error('Unhandled Rejection at:', p, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err && err.stack ? err.stack : err);
+  // On uncaught exceptions, exit so a process manager / container can restart
+  process.exit(1);
+});
+
 export default app;
