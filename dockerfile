@@ -11,19 +11,15 @@ RUN cd frontend && npm install
 COPY frontend/ frontend/
 RUN cd frontend && npm run build
 
-# --- Runtime Stage: Backend ---
-FROM node:18-alpine AS runtime
-WORKDIR /workspace/app
+# --- Runtime Stage: Static frontend ---
+FROM nginx:stable-alpine AS runtime
 
-# Copy backend code and install production dependencies
-COPY backend/package*.json backend/
-RUN cd backend && npm ci --production
-COPY backend/ backend/
+# Create the path that PXXL runtime wrapper expects
+RUN mkdir -p /workspace/app/frontend
 
-# Copy the built frontend from the 'builder' stage into the correct 'dist' folder inside the backend
-COPY --from=builder /workspace/app/frontend/dist backend/dist
+# Copy built frontend output into the expected path and Nginx serving directory
+COPY --from=builder /workspace/app/frontend/dist /workspace/app/frontend
+COPY --from=builder /workspace/app/frontend/dist /usr/share/nginx/html
 
-WORKDIR /workspace/app/backend
-ENV NODE_ENV=production
-EXPOSE 5000
-CMD ["node", "index.js"]
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
