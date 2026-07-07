@@ -1,11 +1,14 @@
 # PXXL deployment config - frontend-only Docker runtime
 # Use a hidden file to ensure PXXL reads the config.
 
-project: plutoboost-frontend
+project: plutoboost-backend
 docker:
+  # Build the backend image using the Dockerfile inside the `backend/` folder
   dockerfile: Dockerfile
-  context: .
-  expose: 80
+  context: backend
+  expose: 5000
 
 env:
-  VITE_API_BASE_URL: "https://plutoboost.pxxl.run/"
+  DISABLE_STATIC_FRONTEND: "true"
+  # FRONTEND_URL should point to your Netlify site
+  FRONTEND_URL: "https://plutoboost.netlify.app"

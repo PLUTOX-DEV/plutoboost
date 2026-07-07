@@ -2,14 +2,13 @@
 # This file instructs PXXL to build the frontend folder and publish `dist`.
 # If your PXXL dashboard uses a different filename or schema, adapt accordingly.
 
-project: plutoboost-frontend
-# Use Docker mode so the runtime image contains the static site under /usr/share/nginx/html
-# and the runtime does not attempt to `cd /workspace/app/frontend`.
+project: plutoboost-backend
 docker:
-  # Use root Dockerfile which builds frontend and places files at /workspace/app/frontend
+  # Build the backend image using the Dockerfile in `backend/`
   dockerfile: Dockerfile
-  context: .
-  expose: 80
+  context: backend
+  expose: 5000
 
 env:
-  VITE_API_BASE_URL: "https://plutoboost.pxxl.run/"
+  DISABLE_STATIC_FRONTEND: "true"
+  FRONTEND_URL: "https://plutoboost.netlify.app"
