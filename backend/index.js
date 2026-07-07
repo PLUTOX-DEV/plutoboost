@@ -51,8 +51,17 @@ async function getSetting(key, defaultValue) {
 }
 
 const app = express();
+// CORS: allow one or more frontend origins configured via env
+// Set `FRONTEND_URLS` to a comma-separated list (e.g. "http://localhost:5173,https://your-site.netlify.app").
+const rawOrigins = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigins = rawOrigins.split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Frontend URL
+  origin: function(origin, callback) {
+    // allow requests with no origin (server-to-server, curl, mobile apps)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS policy: origin not allowed'));
+  },
   credentials: true
 }));
 app.use(express.json());
