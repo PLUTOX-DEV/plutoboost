@@ -1,0 +1,11 @@
+# PXXL deployment config - frontend-only Docker runtime
+# Use a hidden file to ensure PXXL reads the config.
+
+project: plutoboost-frontend
+docker:
+  dockerfile: Dockerfile
+  context: .
+  expose: 80
+
+env:
+  VITE_API_BASE_URL: "https://plutoboost.pxxl.run/"
