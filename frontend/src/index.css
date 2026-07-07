@@ -116,7 +116,6 @@
   mix-blend-mode: screen;
   pointer-events: none;
   will-change: opacity;
-  transform: translateZ(0);
   filter: none;
 }
 
@@ -124,6 +123,47 @@
   .animated-gradient {
     animation: none;
     background-size: cover;
+  }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 1100px) {
+  .dashboard-page .glass,
+  .dashboard-page .glass-dark,
+  .dashboard-page .glass-light {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .dashboard-page .dashboard-bg-fade {
+    display: none !important;
+    background: none !important;
+    opacity: 0 !important;
+    mix-blend-mode: normal !important;
+    filter: none !important;
+  }
+
+  .dashboard-page .card-hover,
+  .dashboard-page .btn-primary,
+  .dashboard-page .input-glass {
+    transition: none !important;
+  }
+
+  .dashboard-page .gradient-text,
+  .dashboard-page .gradient-text-gold {
+    -webkit-text-fill-color: initial !important;
+    background: none !important;
+    color: white !important;
+    background-clip: border-box !important;
+  }
+
+  .dashboard-page .animated-gradient,
+  .dashboard-page .pulse-glow,
+  .dashboard-page .float,
+  .dashboard-page .shimmer::after {
+    animation: none !important;
   }
 }
 
