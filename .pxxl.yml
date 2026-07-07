@@ -10,5 +10,5 @@ docker:
 
 env:
   DISABLE_STATIC_FRONTEND: "true"
-  # FRONTEND_URL should point to your Netlify site
   FRONTEND_URL: "https://plutoboost.netlify.app"
+  FRONTEND_URLS: "https://plutoboost.netlify.app,http://localhost:5173"
