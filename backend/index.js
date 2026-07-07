@@ -24,18 +24,8 @@ import { sendEmail } from './mailer.js';
 import adminRoutes from './adminRoutes.js';
 dotenv.config();
 
-// Derive a single callback/frontend URL from env variables.
-// Accept either FRONTEND_URLS (comma-separated) or FRONTEND_URL and
-// always use the first valid entry. This prevents malformed values like
-// "https://site.netlify.app,http//localhost:5173" from being used.
-const _frontendEnv = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173';
-let CALLBACK_FRONTEND_URL = String(_frontendEnv).split(',')[0].trim();
-if (!/^https?:\/\//i.test(CALLBACK_FRONTEND_URL)) {
-  // fallback to http://localhost:5173 if the first entry is invalid
-  CALLBACK_FRONTEND_URL = 'http://localhost:5173';
-}
-CALLBACK_FRONTEND_URL = CALLBACK_FRONTEND_URL.replace(/\/$/, '');
-console.log('Using callback frontend URL:', CALLBACK_FRONTEND_URL);
+// CALLBACK_FRONTEND_URL will be derived from validated CORS origins below.
+let CALLBACK_FRONTEND_URL = null;
 
 // Startup validation for essential environment variables
 if (!process.env.EXOBOOSTER_API_URL || !process.env.EXO_API_KEY) {
@@ -67,11 +57,27 @@ const app = express();
 // CORS: allow one or more frontend origins configured via env
 // Set `FRONTEND_URLS` to a comma-separated list (e.g. "http://localhost:5173,https://your-site.netlify.app").
 const rawOrigins = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173,https://plutoboost.netlify.app';
-const allowedOrigins = rawOrigins
-  .split(',')
-  .map(s => s.trim().replace(/\/$/, ''))
-  .filter(Boolean);
+// Normalize and validate origins. Reject obviously malformed entries and log them.
+const potentialOrigins = rawOrigins.split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean);
+const validOriginRegex = /^(https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?|https?:\/\/[\w.-]+(:\d+)?(\/.*)?)$/i;
+const allowedOrigins = [];
+const rejectedOrigins = [];
+for (const o of potentialOrigins) {
+  if (validOriginRegex.test(o)) {
+    allowedOrigins.push(o);
+  } else {
+    rejectedOrigins.push(o);
+  }
+}
+if (rejectedOrigins.length) {
+  console.warn('Ignored malformed FRONTEND URL(s):', rejectedOrigins.join(', '));
+}
 console.log('CORS allowed origins:', allowedOrigins);
+// Derive CALLBACK_FRONTEND_URL from the first validated allowed origin, fallback to localhost
+CALLBACK_FRONTEND_URL = (allowedOrigins && allowedOrigins.length > 0) ? allowedOrigins[0] : 'http://localhost:5173';
+if (!/^https?:\/\//i.test(CALLBACK_FRONTEND_URL)) CALLBACK_FRONTEND_URL = 'http://localhost:5173';
+CALLBACK_FRONTEND_URL = String(CALLBACK_FRONTEND_URL).replace(/\/$/, '');
+console.log('Using callback frontend URL:', CALLBACK_FRONTEND_URL);
 const corsOptions = {
   origin: function(origin, callback) {
     if (!origin) return callback(null, true);
@@ -120,14 +126,19 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => {
   const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET);
-  res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}?token=${token}`);
+  // Use sanitized callback frontend URL to avoid leaking tokens into malformed env values
+  const redirectBase = CALLBACK_FRONTEND_URL || (process.env.FRONTEND_URL || 'http://localhost:5173');
+  const redirectUrl = `${redirectBase}/?token=${encodeURIComponent(token)}`;
+  res.redirect(redirectUrl);
 });
 
 app.get('/auth/twitter', passport.authenticate('twitter'));
 
 app.get('/auth/twitter/callback', passport.authenticate('twitter', { failureRedirect: '/login' }), (req, res) => {
   const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET);
-  res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}?token=${token}`);
+  const redirectBase = CALLBACK_FRONTEND_URL || (process.env.FRONTEND_URL || 'http://localhost:5173');
+  const redirectUrl = `${redirectBase}/?token=${encodeURIComponent(token)}`;
+  res.redirect(redirectUrl);
 });
 
 app.post('/logout', (req, res) => {
@@ -642,7 +653,8 @@ app.post('/api/forgot-password', async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    const frontendBase = CALLBACK_FRONTEND_URL || (process.env.FRONTEND_URL || 'http://localhost:5173');
+    const resetUrl = `${frontendBase}/reset-password/${resetToken}`;
     const emailHtml = `
       <h2>Password Reset Request</h2>
       <p>You are receiving this email because you (or someone else) have requested the reset of the password for your account.</p>

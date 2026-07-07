@@ -187,6 +187,40 @@
   .card-hover:hover { transform: none !important; box-shadow: none !important; }
 }
 
+/* Target touch devices (coarse pointer) to avoid heavy GPU/compositing work
+   This catches mobile browsers even when viewport is set to desktop mode. */
+@media (pointer: coarse) {
+  .glass, .glass-dark, .glass-light {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(0,0,0,0.06) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.16) !important;
+    border: 1px solid rgba(255,255,255,0.06) !important;
+  }
+
+  .dashboard-bg-fade {
+    background: none !important;
+    opacity: 0.25 !important;
+    mix-blend-mode: normal !important;
+    filter: none !important;
+  }
+
+  .animated-gradient, .pulse-glow, .float, .shimmer::after {
+    animation: none !important;
+  }
+
+  .card-hover, .btn-primary, .input-glass {
+    transition: none !important;
+  }
+
+  /* Reduce heavy text gradients that may force extra compositing */
+  .gradient-text, .gradient-text-gold {
+    -webkit-text-fill-color: initial !important;
+    background: none !important;
+    color: white !important;
+  }
+}
+
 /* ===== CARD HOVER EFFECTS ===== */
 .card-hover {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
