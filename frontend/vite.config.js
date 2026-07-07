@@ -7,4 +7,16 @@ export default defineConfig({
   server: {
     port: 5173, // optional, can change
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('recharts') || id.includes('framer-motion')) return 'vendor_charts';
+            return 'vendor';
+          }
+        }
+      }
+    }
+  }
 });

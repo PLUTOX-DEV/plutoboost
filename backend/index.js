@@ -368,15 +368,48 @@ app.get('/user/orders', authenticateToken, async (req, res) => {
 app.use('/api/admin', adminRoutes);
 
 // --- Serve Frontend Statically ---
-// This is the correct way to serve a React app from a Node.js backend
+// Serve built frontend from one of several expected locations so deployments
+// that place `dist` beside `frontend/` or inside `backend/` both work.
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
-const frontendDistPath = path.resolve(__dirname, 'dist');
+const possibleFrontendDirs = [
+  path.resolve(__dirname, 'dist'), // backend/dist (when frontend copied into backend)
+  path.resolve(__dirname, '..', 'frontend', 'dist'), // ../frontend/dist (monorepo)
+  path.resolve(process.cwd(), 'frontend', 'dist'), // process cwd frontend/dist (build systems)
+];
 
-app.use(express.static(frontendDistPath));
+let frontendDistPath = null;
+for (const p of possibleFrontendDirs) {
+  try {
+    if (fs.existsSync(p)) {
+      frontendDistPath = p;
+      break;
+    }
+  } catch (e) {
+    // ignore
+  }
+}
 
-app.get('*', (req, res) => {
-  res.sendFile(path.resolve(frontendDistPath, 'index.html'));
-});
+// Allow forcing static serving off when frontend is hosted separately (e.g. Netlify)
+const disableStatic = (process.env.DISABLE_STATIC_FRONTEND === 'true' || process.env.DISABLE_STATIC_FRONTEND === '1');
+if (disableStatic) {
+  console.log('DISABLE_STATIC_FRONTEND is set — skipping static frontend serving.');
+} else {
+  if (frontendDistPath) {
+    const indexHtml = path.resolve(frontendDistPath, 'index.html');
+    if (fs.existsSync(indexHtml)) {
+      console.log(`Serving static frontend from: ${frontendDistPath}`);
+      app.use(express.static(frontendDistPath));
+      app.get('*', (req, res) => {
+        res.sendFile(indexHtml);
+      });
+    } else {
+      console.warn(`Frontend 'dist' found at ${frontendDistPath} but index.html is missing. Static serving disabled.`);
+    }
+  } else {
+    console.warn('No frontend `dist` directory found. Static file serving is disabled.\n' +
+      'To enable, build the frontend and copy the `dist/` folder to `backend/dist` or ensure `frontend/dist` exists.');
+  }
+}
 
 app.get('/api/blog/posts', async (req, res) => {
   try {
