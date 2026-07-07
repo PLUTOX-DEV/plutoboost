@@ -154,7 +154,7 @@ app.post('/api/register', async (req, res) => {
     }
     const user = new User({ username: normalizedUsername, email: normalizedEmail, password, balance: 0 });
     await user.save();
-    await createLog('info', `New user registration: ${email}`, 'user');
+    createLog('info', `New user registration: ${email}`, 'user').catch(err => console.error('Logging error:', err));
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
     const userResponse = { id: user._id, username: user.username, email: user.email };
     res.json({ token, user: userResponse, balance: user.balance });
@@ -178,7 +178,7 @@ app.post('/api/login', async (req, res) => {
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-    await createLog('info', `User login: ${username}`, 'security');
+    createLog('info', `User login: ${username}`, 'security').catch(err => console.error('Logging error:', err));
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
     const userResponse = { id: user._id, username: user.username, email: user.email };
     res.json({ token, user: userResponse, balance: user.balance });
@@ -207,7 +207,7 @@ app.post('/wallet/fund', authenticateToken, async (req, res) => {
     if (user) {
       user.balance += amount;
       await user.save();
-      await createLog('info', `Wallet funded for ${user.username} with ₦${amount}`, 'payment');
+      createLog('info', `Wallet funded for ${user.username} with ₦${amount}`, 'payment').catch(err => console.error('Logging error:', err));
       res.json({ success: true, newBalance: user.balance });
     } else {
       res.status(404).json({ error: 'User not found' });
@@ -332,11 +332,6 @@ app.get('/services', async (req, res) => {
     const PROFIT_MARGIN_PERCENTAGE = process.env.PROFIT_MARGIN_PERCENTAGE || 20; // Default to 20%
     const { platform } = req.query;
     let allServices = await getServices();
-
-    // Log raw prices from Exo Booster for debugging, as requested.
-    console.log("--- Raw Exo Booster Prices (per 1k) ---");
-    allServices.forEach(s => console.log(`ID: ${s.service} | ${s.name}: ₦${s.rate}`));
-    console.log("-----------------------------------------");
 
     // Apply profit margin to create the final selling price
     allServices = allServices.map(service => ({
@@ -548,7 +543,7 @@ app.post('/api/contact', async (req, res) => {
     Message: ${message}
   `);
 
-  await createLog('info', `New public contact message from ${email}: ${subject}`, 'support');
+  createLog('info', `New public contact message from ${email}: ${subject}`, 'support').catch(err => console.error('Logging error:', err));
 
   // Send email notification to admin
   const emailHtml = `
@@ -581,7 +576,7 @@ app.post('/api/help/contact', authenticateToken, async (req, res) => {
     Message: ${message}
   `);
 
-  await createLog('info', `New support ticket from ${user.email}: ${subject}`, 'support');
+  createLog('info', `New support ticket from ${user.email}: ${subject}`, 'support').catch(err => console.error('Logging error:', err));
   res.json({ success: true, message: 'Your message has been sent. We will get back to you shortly.' });
 });
 

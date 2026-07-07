@@ -29,11 +29,15 @@
 
   body {
     @apply text-white antialiased;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: contain;
     background:
       radial-gradient(circle at 20% 10%, rgba(168,85,247,0.35), transparent 60%),
       radial-gradient(circle at 80% 30%, rgba(99,102,241,0.35), transparent 60%),
       linear-gradient(180deg, #0b0619, #05030f);
     min-height: 100vh;
+    backface-visibility: hidden;
   }
 
   ::selection {
@@ -73,27 +77,14 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* ===== GLOW EFFECTS ===== */
-.glow-border {
-  box-shadow:
-    0 0 40px rgba(168, 85, 247, 0.25),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+@media (max-width: 768px) {
+  .glass, .glass-dark, .glass-light {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
 }
-
-.glow-purple {
-  box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
-}
-
-.glow-indigo {
-  box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
-}
-
-.glow-cyan {
-  box-shadow: 0 0 30px rgba(34, 211, 238, 0.4);
-}
-
-.glow-text {
-  text-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
 }
 
 /* ===== GRADIENT TEXT ===== */
@@ -116,6 +107,13 @@
   background: linear-gradient(270deg, #a855f7, #6366f1, #22d3ee, #a855f7);
   background-size: 400% 400%;
   animation: gradientShift 8s ease infinite;
+}
+
+@media (max-width: 768px) {
+  .animated-gradient {
+    animation: none;
+    background-size: cover;
+  }
 }
 
 @keyframes gradientShift {
@@ -172,7 +170,7 @@
 
 /* ===== CARD HOVER EFFECTS ===== */
 .card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-hover:hover {
@@ -180,6 +178,14 @@
   box-shadow:
     0 0 50px rgba(168, 85, 247, 0.3),
     inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 768px) {
+  .card-hover {
+    transition: none;
+    transform: none !important;
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.2);
+  }
 }
 
 /* ===== BUTTON STYLES ===== */
@@ -308,6 +314,60 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(99, 102, 241, 0.2);
   color: #818cf8;
   border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+/* ===== MOBILE PERFORMANCE ===== */
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: contain;
+    backface-visibility: hidden;
+  }
+
+  .glass, .glass-dark, .glass-light,
+  .backdrop-blur-xl, .backdrop-blur-sm {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .animate-fade,
+  .animated-gradient,
+  .pulse-glow,
+  .float,
+  .shimmer,
+  .card-hover,
+  .NavLink,
+  .transition,
+  .transition-all,
+  .transition-transform {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .glass {
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.18) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn-primary,
+  .btn-secondary,
+  .input-glass {
+    transition: none !important;
+  }
+
+  .mobile-full {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: 0;
+  }
 }
 
 /* ===== STAT CARD GRADIENT BORDERS ===== */

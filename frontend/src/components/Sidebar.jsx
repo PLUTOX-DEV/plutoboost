@@ -25,7 +25,7 @@ export default function Sidebar() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "auto";
+    document.body.classList.toggle('no-scroll', open);
   }, [open]);
 
   const items = [
