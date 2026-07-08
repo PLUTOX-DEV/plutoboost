@@ -4,9 +4,10 @@
   "version": "1.0.0",
   "scripts": {
     "install:backend": "npm install --prefix backend",
-    "install:frontend": "npm install --prefix frontend",
-    "install": "npm run install:backend && npm run install:frontend",
-    "build": "npm run build --prefix frontend",
+    "install:frontend-new": "npm install --prefix frontend-new",
+    "install": "npm run install:backend && npm run install:frontend-new",
+    "build:frontend-new": "npm run build --prefix frontend-new",
+    "build": "npm run build:frontend-new",
     "build-and-copy": "npm run build --prefix frontend && node ./scripts/copyDist.js",
     "start": "node backend/index.js"
   },

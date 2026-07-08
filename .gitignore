@@ -1,8 +1,10 @@
 # Root-level ignore patterns
 /node_modules
 /frontend/node_modules
+/frontend-new/node_modules
 /backend/node_modules
 /frontend/dist
+/frontend-new/dist
 *.env
 *.env.*
 .DS_Store

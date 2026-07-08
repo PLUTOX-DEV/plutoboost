@@ -13,8 +13,17 @@ import Transaction from './models/Transaction.js';
 // @access  Private
 router.post('/', auth, async (req, res) => {
   const session = await mongoose.startSession();
-  const { serviceId, serviceType, orderDetails, price, link, quantity, platform } = req.body;
-  const PROFIT_MARGIN_PERCENTAGE = process.env.PROFIT_MARGIN_PERCENTAGE || 20; // Default to 20%
+  const { serviceId, serviceType, orderDetails, link, quantity, platform } = req.body;
+  const PROFIT_MARGIN_PERCENTAGE = parseFloat(process.env.PROFIT_MARGIN_PERCENTAGE || '20'); // Default to 20%
+  const quantityValue = Math.max(1, parseInt(quantity, 10) || 1);
+
+  if (!serviceId || !serviceType || !orderDetails) {
+    return res.status(400).json({ msg: 'serviceId, serviceType, and orderDetails are required.' });
+  }
+
+  if (quantityValue <= 0) {
+    return res.status(400).json({ msg: 'Quantity must be at least 1.' });
+  }
 
   try {
     const result = await session.withTransaction(async () => {
@@ -36,16 +45,22 @@ router.post('/', auth, async (req, res) => {
 
       // Corrected: Recalculate price on backend based on per-unit cost to ensure accuracy
       const costPerUnit = parseFloat(service.rate);
-      const cost = quantity * costPerUnit;
+      if (Number.isNaN(costPerUnit) || costPerUnit <= 0) {
+        const err = new Error('Invalid service cost returned by provider.');
+        err.status = 500;
+        throw err;
+      }
+
+      const cost = quantityValue * costPerUnit;
       const profitPercentage = PROFIT_MARGIN_PERCENTAGE / 100;
       const sellingPricePerUnit = costPerUnit * (1 + profitPercentage);
-      const sellingPrice = quantity * sellingPricePerUnit;
+      const sellingPrice = quantityValue * sellingPricePerUnit;
       const profit = sellingPrice - cost;
 
       console.log("\n--- Server-Side Price Calculation ---");
-      console.log(`Quantity: ${quantity}`);
+      console.log(`Quantity: ${quantityValue}`);
       console.log(`Provider Cost (per unit): ₦${costPerUnit.toFixed(2)}`);
-      console.log(`Total Cost from Provider: (${quantity} * ₦${costPerUnit.toFixed(2)}) = ₦${cost.toFixed(2)}`);
+      console.log(`Total Cost from Provider: (${quantityValue} * ₦${costPerUnit.toFixed(2)}) = ₦${cost.toFixed(2)}`);
       console.log(`Your Profit Margin: ${PROFIT_MARGIN_PERCENTAGE}%`);
       console.log(`Final Selling Price: (₦${cost.toFixed(2)} * (1 + ${profitPercentage})) = ₦${sellingPrice.toFixed(2)}`);
       console.log(`Your Profit on this Order: ₦${profit.toFixed(2)}`);
@@ -70,7 +85,7 @@ router.post('/', auth, async (req, res) => {
           key: process.env.EXO_API_KEY,
           action: 'add',
           service: serviceId,
-          quantity: quantity || 1,
+          quantity: quantityValue,
           link: link || orderDetails,
         }, { timeout: 15000 }); // Add a 15-second timeout for the provider API
       } catch (apiError) {
@@ -125,11 +140,11 @@ router.post('/', auth, async (req, res) => {
         orderDetails,
         price: sellingPrice,
         cost: cost,
-        profit: profit, // Ensure profit is saved with the order
-        fee: profit, // Explicitly save the calculated profit as a fee on the order
+        profit,
+        fee: profit, // Keep fee aligned with profit so admin reporting works
         status: 'Processing',
         link: link || orderDetails,
-        quantity: quantity || 1,
+        quantity: quantityValue,
         platform: platform || 'General',
         providerOrderId: providerOrderId,
         transaction: transaction._id // Link to the transaction
