@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [linkPlaceholder, setLinkPlaceholder] = useState("https://...");
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
   const [serviceError, setServiceError] = useState(null);
   const [systemStatus, setSystemStatus] = useState({ status: 'checking', message: 'Checking...' });
@@ -49,6 +50,14 @@ export default function Dashboard() {
   const platformMap = { youtube: Youtube, instagram: Instagram, twitter: Twitter, facebook: Facebook, tiktok: Music };
   const colorMap = { youtube: "text-red-500", instagram: "text-pink-500", twitter: "text-sky-400", facebook: "text-blue-600", tiktok: "text-black" };
   const bgMap = { youtube: "bg-red-500/10", instagram: "bg-pink-500/10", twitter: "bg-sky-400/10", facebook: "bg-blue-600/10", tiktok: "bg-gray-800/10" };
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 1024px)');
+    const updateMobileView = () => setIsMobileView(mql.matches);
+    updateMobileView();
+    mql.addEventListener?.('change', updateMobileView);
+    return () => mql.removeEventListener?.('change', updateMobileView);
+  }, []);
 
   const getServiceIcon = useCallback((name) => {
     const lower = name.toLowerCase();
@@ -204,7 +213,7 @@ export default function Dashboard() {
         <div className="absolute inset-0 pointer-events-none dashboard-bg-fade" />
 
         {/* HEADER */}
-        <motion.div {...fadeInUp} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <motion.div {...(isMobileView ? {} : fadeInUp)} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold gradient-text">Dashboard</h1>
             <p className="text-gray-400 text-sm sm:text-base mt-1">Boost your social media growth</p>
@@ -223,9 +232,7 @@ export default function Dashboard() {
         {/* NOTIFICATION */}
         {notification.show && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            {...(isMobileView ? {} : { initial: { opacity: 0, y: -20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 } })}
             className={`p-4 rounded-xl border ${
               notification.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border-red-500/30 text-red-400'
             }`}
@@ -236,9 +243,7 @@ export default function Dashboard() {
 
         {/* QUICK STATS */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          {...(isMobileView ? {} : { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.1 } })}
           className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5"
         >
           <StatCard icon={Wallet} label="Balance" value={`₦${balance.toLocaleString()}`} color="purple" />
@@ -248,9 +253,7 @@ export default function Dashboard() {
 
         {/* ORDER GRID */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          {...(isMobileView ? {} : { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.2 } })}
           className="grid grid-cols-1 xl:grid-cols-[2.5fr_1fr] gap-6"
         >
           <div className="glass card-hover rounded-2xl p-4 sm:p-6 space-y-6">

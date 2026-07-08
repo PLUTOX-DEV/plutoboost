@@ -40,6 +40,21 @@
     backface-visibility: hidden;
   }
 
+  body.reduced-motion,
+  body.reduced-motion * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+    -webkit-animation: none !important;
+    -webkit-transition: none !important;
+    will-change: auto !important;
+    transform: none !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+  }
+
   ::selection {
     background: rgba(168, 85, 247, 0.4);
     color: white;
@@ -178,11 +193,25 @@
 /* Target touch devices (coarse pointer) to avoid heavy GPU/compositing work
    This catches mobile browsers even when viewport is set to desktop mode. */
 @media (max-width: 1024px), (pointer: coarse) {
-  .glass, .glass-dark, .glass-light {
+  body, html, #root {
+    background: #05030f !important;
+  }
+
+  [class*='backdrop-blur'],
+  .glass, .glass-dark, .glass-light,
+  .dashboard-bg-fade,
+  .backdrop-blur-sm,
+  .backdrop-blur-xl,
+  .backdrop-blur-2xl {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    background: rgba(0, 0, 0, 0.08) !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16) !important;
+    filter: none !important;
+  }
+
+  [class*='backdrop-blur'],
+  .glass, .glass-dark, .glass-light {
+    background: rgba(0, 0, 0, 0.1) !important;
+    box-shadow: none !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
   }
 
@@ -191,27 +220,47 @@
     background: none !important;
     opacity: 1 !important;
     mix-blend-mode: normal !important;
-    filter: none !important;
   }
 
-  .animated-gradient, .pulse-glow, .float, .shimmer::after {
+  body.reduced-motion,
+  body.reduced-motion * {
     animation: none !important;
-  }
-
-  .card-hover, .btn-primary, .input-glass {
     transition: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-animation: none !important;
+    -webkit-transition: none !important;
+    will-change: auto !important;
   }
 
-  /* Reduce heavy text gradients that may force extra compositing */
-  .gradient-text, .gradient-text-gold {
-    -webkit-text-fill-color: initial !important;
-    background: none !important;
-    color: white !important;
+  .animated-gradient,
+  .pulse-glow,
+  .float,
+  .shimmer::after,
+  .shadow-glow-sm,
+  .shadow-2xl,
+  .shadow-3xl,
+  .gradient-text,
+  .gradient-text-gold,
+  .btn-primary,
+  .card-hover,
+  .input-glass,
+  .notification,
+  .dashboard-page,
+  .sidebar,
+  .sidebar-mobile {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    box-shadow: none !important;
   }
 
-  .btn-primary:hover,
   .card-hover:hover,
-  .input-glass:focus {
+  .btn-primary:hover,
+  .input-glass:focus,
+  .backdrop-blur:hover {
     transform: none !important;
     box-shadow: none !important;
   }

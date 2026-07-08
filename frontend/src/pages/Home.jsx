@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import UserContext from "../context/UserContext";
@@ -34,6 +34,16 @@ const fadeInUp = {
 
 /* ===================== HERO ===================== */
 const Hero = () => {
+  const [showImage, setShowImage] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1025px)');
+    const update = () => setShowImage(mql.matches);
+    update();
+    mql.addEventListener?.('change', update);
+    return () => mql.removeEventListener?.('change', update);
+  }, []);
+
   return (
     <section className="relative min-h-[90vh] lg:min-h-screen overflow-hidden text-white bg-[#0B0E2A]">
       {/* Base Gradient */}
@@ -63,13 +73,16 @@ const Hero = () => {
       </div>
 
       {/* Hero Image */}
-      <div className="absolute inset-0 z-[2]">
-        <img
-          src={HeroImage}
-          alt="Hero Background"
-          className="w-full h-full object-cover scale-105 md:scale-110"
-        />
-      </div>
+      {showImage && (
+        <div className="absolute inset-0 z-[2]">
+          <img
+            src={HeroImage}
+            alt="Hero Background"
+            className="w-full h-full object-cover scale-105 md:scale-110"
+            loading="lazy"
+          />
+        </div>
+      )}
 
       {/* Overlay */}
       <div className="absolute inset-0 z-[3] bg-gradient-to-b from-[#0B0E2A]/90 via-[#0B0E2A]/70 to-[#0B0E2A]" />

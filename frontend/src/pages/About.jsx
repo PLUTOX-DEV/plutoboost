@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Users, TrendingUp, Shield, Zap, Star, Award, Globe, Heart } from "lucide-react";
 import Navbar from "../components/Navbar";
@@ -47,6 +48,16 @@ const fadeInUp = {
 };
 
 export default function About() {
+  const [showFounderImage, setShowFounderImage] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1025px)');
+    const update = () => setShowFounderImage(mql.matches);
+    update();
+    mql.addEventListener?.('change', update);
+    return () => mql.removeEventListener?.('change', update);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#07091F] text-white">
       <Navbar />
@@ -193,7 +204,9 @@ export default function About() {
               transition={{ delay: 0.1 }}
               className="glass rounded-2xl p-8 text-center card-hover"
             >
-              <img src={founder.image} alt={founder.name} className="w-28 h-28 rounded-full mx-auto mb-4 object-cover border-4 border-purple-500/30" />
+              {showFounderImage && (
+                <img src={founder.image} alt={founder.name} loading="lazy" className="w-28 h-28 rounded-full mx-auto mb-4 object-cover border-4 border-purple-500/30" />
+              )}
               <h3 className="text-2xl font-semibold mb-1">{founder.name}</h3>
               <p className="text-purple-400 text-sm mb-4">{founder.role}</p>
               <p className="text-sm text-gray-400">{founder.bio}</p>
