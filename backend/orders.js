@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 const router = express.Router();
 import auth from './auth.js';
 import { getServices } from './index.js';
@@ -14,11 +14,18 @@ import Transaction from './models/Transaction.js';
 router.post('/', auth, async (req, res) => {
   const session = await mongoose.startSession();
   const { serviceId, serviceType, orderDetails, link, quantity, platform } = req.body;
-  const PROFIT_MARGIN_PERCENTAGE = parseFloat(process.env.PROFIT_MARGIN_PERCENTAGE || '20'); // Default to 20%
+  const PROFIT_MARGIN_PERCENTAGE = parseFloat(process.env.PROFIT_MARGIN_PERCENTAGE || '20');
+  const KCLAUT_API_URL = process.env.KCLAUT_API_URL;
+  const KCLAUT_API_KEY = process.env.KCLAUT_API_KEY;
+  const KCLAUT_TEST_MODE = process.env.KCLAUT_TEST_MODE === 'true';
   const quantityValue = Math.max(1, parseInt(quantity, 10) || 1);
 
   if (!serviceId || !serviceType || !orderDetails) {
     return res.status(400).json({ msg: 'serviceId, serviceType, and orderDetails are required.' });
+  }
+
+  if (!KCLAUT_API_URL || !KCLAUT_API_KEY) {
+    return res.status(500).json({ msg: 'KClaut provider is not configured. Please add KCLAUT_API_URL and KCLAUT_API_KEY.' });
   }
 
   if (quantityValue <= 0) {
@@ -34,37 +41,52 @@ router.post('/', auth, async (req, res) => {
         throw err;
       }
 
-      // --- Recalculate price on the backend to ensure correctness ---
       const services = await getServices();
-      const service = services.find(s => s.service === serviceId);
+      const service = services.find(s => s.id === serviceId || s.service === String(serviceId) || s.providerId === String(serviceId));
       if (!service) {
         const err = new Error('Service not found.');
         err.status = 404;
         throw err;
       }
 
-      // Corrected: Recalculate price on backend based on per-unit cost to ensure accuracy
-      const costPerUnit = parseFloat(service.rate);
-      if (Number.isNaN(costPerUnit) || costPerUnit <= 0) {
+      const profitPercentage = PROFIT_MARGIN_PERCENTAGE / 100;
+      const providerRatePerUnit = parseFloat(service.rate);
+      const providerRateRaw = parseFloat(service.providerRateRaw ?? providerRatePerUnit);
+      const isPerThousand = String(service.rateUnit).toLowerCase() === 'per_1000' && providerRateRaw > 0;
+
+      let cost;
+      let costPerUnit;
+      if (isPerThousand) {
+        cost = (quantityValue / 1000) * providerRateRaw;
+        costPerUnit = providerRateRaw / 1000;
+      } else {
+        cost = quantityValue * providerRatePerUnit;
+        costPerUnit = providerRatePerUnit;
+      }
+
+      if (!Number.isFinite(cost) || cost <= 0) {
         const err = new Error('Invalid service cost returned by provider.');
         err.status = 500;
         throw err;
       }
 
-      const cost = quantityValue * costPerUnit;
-      const profitPercentage = PROFIT_MARGIN_PERCENTAGE / 100;
-      const sellingPricePerUnit = costPerUnit * (1 + profitPercentage);
-      const sellingPrice = quantityValue * sellingPricePerUnit;
-      const profit = sellingPrice - cost;
+      const profit = cost * profitPercentage;
+      const sellingPrice = cost + profit;
 
-      console.log("\n--- Server-Side Price Calculation ---");
+      console.log('\n--- Server-Side Price Calculation ---');
       console.log(`Quantity: ${quantityValue}`);
-      console.log(`Provider Cost (per unit): ₦${costPerUnit.toFixed(2)}`);
-      console.log(`Total Cost from Provider: (${quantityValue} * ₦${costPerUnit.toFixed(2)}) = ₦${cost.toFixed(2)}`);
+      if (isPerThousand) {
+        console.log(`Provider price per 1000: ₦${providerRateRaw.toFixed(2)}`);
+        console.log(`Cost (quantity / 1000 * pricePerThousand): (${quantityValue} / 1000 * ₦${providerRateRaw.toFixed(2)}) = ₦${cost.toFixed(2)}`);
+        console.log(`Normalized cost per unit: ₦${costPerUnit.toFixed(6)}`);
+      } else {
+        console.log(`Provider cost per unit: ₦${costPerUnit.toFixed(6)}`);
+        console.log(`Cost (quantity * costPerUnit): (${quantityValue} * ₦${costPerUnit.toFixed(6)}) = ₦${cost.toFixed(2)}`);
+      }
       console.log(`Your Profit Margin: ${PROFIT_MARGIN_PERCENTAGE}%`);
-      console.log(`Final Selling Price: (₦${cost.toFixed(2)} * (1 + ${profitPercentage})) = ₦${sellingPrice.toFixed(2)}`);
-      console.log(`Your Profit on this Order: ₦${profit.toFixed(2)}`);
-      console.log("------------------------------------");
+      console.log(`Profit: ₦${profit.toFixed(2)}`);
+      console.log(`Final Selling Price: ₦${sellingPrice.toFixed(2)}`);
+      console.log('------------------------------------');
 
       if (user.balance < sellingPrice) {
         const err = new Error('Insufficient balance. Please fund your wallet.');
@@ -72,97 +94,94 @@ router.post('/', auth, async (req, res) => {
         throw err;
       }
 
-    // Call external API before saving and charging user
-    let apiResponse;
-    if (process.env.EXOBOOSTER_TEST_MODE === 'true') {
-      // Simulate a successful API response in test mode
-      const fakeOrderId = Math.floor(100000 + Math.random() * 900000);
-      apiResponse = { data: { order: fakeOrderId } };
-      console.log(`[TEST MODE] Simulated ExoBooster order placement. Fake Order ID: ${fakeOrderId}`);
-    } else {
-      try {
-        apiResponse = await axios.post(process.env.EXOBOOSTER_API_URL, {
-          key: process.env.EXO_API_KEY,
-          action: 'add',
-          service: serviceId,
-          quantity: quantityValue,
-          link: link || orderDetails,
-        }, { timeout: 15000 }); // Add a 15-second timeout for the provider API
-      } catch (apiError) {
-        console.error('ExoBooster API error:', apiError.message);
-        const err = new Error('Provider API error. Please try again in a few moments.');
-        err.status = 503; // Service Unavailable is a good code here.
-
-        if (axios.isAxiosError(apiError) && apiError.response) {
-          // If the provider API responded with an error (e.g. "invalid link")
-          err.message = `Provider Error: ${apiError.response.data.error || 'Failed to place order.'}`;
-          err.status = 400; // Bad Request from our client's side
+      let apiResponse;
+      if (KCLAUT_TEST_MODE) {
+        const fakeOrderId = Math.floor(100000 + Math.random() * 900000);
+        apiResponse = { data: { order: fakeOrderId } };
+        console.log(`[TEST MODE] Simulated KClaut order placement. Fake Order ID: ${fakeOrderId}`);
+      } else {
+        try {
+          apiResponse = await axios.post(KCLAUT_API_URL, {
+            key: KCLAUT_API_KEY,
+            action: 'add',
+            service: service.providerId,
+            link: link || orderDetails,
+            quantity: quantityValue,
+          }, { timeout: 15000 });
+        } catch (apiError) {
+          console.error('KClaut API error:', apiError.message);
+          const err = new Error('Provider API error. Please try again in a few moments.');
+          err.status = 503;
+          if (axios.isAxiosError(apiError) && apiError.response) {
+            err.message = `Provider Error: ${apiError.response.data.error || 'Failed to place order.'}`;
+            err.status = 400;
+          }
+          throw err;
         }
+      }
+
+      console.log('--- Full Response from KClaut ---');
+      console.log(JSON.stringify(apiResponse.data, null, 2));
+      console.log('------------------------------------');
+
+      if (apiResponse.data && apiResponse.data.error) {
+        const err = new Error(`Provider Error: ${apiResponse.data.error}`);
+        err.status = 400;
         throw err;
       }
-    }
 
-    console.log("--- Full Response from Exo Booster ---");
-    console.log(JSON.stringify(apiResponse.data, null, 2));
-    console.log("------------------------------------");
+      const providerOrderId = String(apiResponse.data?.order ?? apiResponse.data?.id ?? '');
+      if (!providerOrderId) {
+        const err = new Error('Failed to place order with provider (Invalid Response).');
+        err.status = 500;
+        throw err;
+      }
 
-    // Check for an error message in the provider's response body
-    if (apiResponse.data && apiResponse.data.error) {
-      const err = new Error(`Provider Error: ${apiResponse.data.error}`);
-      err.status = 400; // Bad Request, as the issue is with the order itself (e.g., funds)
-      throw err;
-    }
-
-    const providerOrderId = apiResponse.data.order || apiResponse.data.id;
-    if (!apiResponse || !apiResponse.data || !providerOrderId) {
-      const err = new Error('Failed to place order with provider (Invalid Response).');
-      err.status = 500;
-      throw err;
-    }
-
-    // If API call was successful, now deduct balance and save order
       user.balance -= sellingPrice;
       await user.save({ session });
 
-    // Create a transaction for the purchase
-    const transaction = new Transaction({
-      user: user._id,
-      type: 'purchase',
-        amount: sellingPrice, // Record the full amount deducted
-      description: `Order for ${serviceType}`, // Temp description
-    });
+      const transaction = new Transaction({
+        user: user._id,
+        type: 'purchase',
+        amount: sellingPrice,
+        description: `Order for ${serviceType}`,
+      });
       await transaction.save({ session });
 
-      // Create and save the order, linking it to the transaction
       const orderToSave = new Order({
         user: req.user.id,
         serviceType,
+        serviceCategory: service.category || '',
+        timeframe: service.type || '',
         orderDetails,
         price: sellingPrice,
-        cost: cost,
+        cost,
         profit,
         fee: profit, // Keep fee aligned with profit so admin reporting works
         status: 'Processing',
         link: link || orderDetails,
         quantity: quantityValue,
-        platform: platform || 'General',
-        providerOrderId: providerOrderId,
-        transaction: transaction._id // Link to the transaction
+        platform: platform || service.category || 'General',
+        provider: 'KCLAUT',
+        providerOrderId,
+        transaction: transaction._id,
       });
       const savedOrder = await orderToSave.save({ session });
 
-      // Now update the transaction description with the final Order ID
       transaction.description = `Order for ${savedOrder.serviceType} #${savedOrder._id}`;
       await transaction.save({ session });
 
-      // Immediately attempt to fetch current status from provider for near-real-time sync
       try {
-        const statusResp = await axios.post(process.env.EXOBOOSTER_API_URL, {
-          key: process.env.EXO_API_KEY,
+        const statusResp = await axios.post(KCLAUT_API_URL, {
+          key: KCLAUT_API_KEY,
           action: 'status',
-          orders: providerOrderId
+          order: providerOrderId,
         }, { timeout: 10000 });
-        const remoteStatus = statusResp.data && statusResp.data[providerOrderId] && statusResp.data[providerOrderId].status;
+
+        const remoteStatus = statusResp.data?.status
+          || statusResp.data?.data?.status
+          || (statusResp.data && statusResp.data[providerOrderId]?.status);
+
         if (remoteStatus) {
           savedOrder.status = remoteStatus;
           await savedOrder.save({ session });
@@ -208,21 +227,29 @@ router.post('/status', auth, async (req, res) => {
     return res.status(400).json({ msg: 'An array of providerOrderIds is required.' });
   }
 
+  const KCLAUT_API_URL = process.env.KCLAUT_API_URL;
+  const KCLAUT_API_KEY = process.env.KCLAUT_API_KEY;
+
+  if (!KCLAUT_API_URL || !KCLAUT_API_KEY) {
+    return res.status(500).json({ msg: 'KClaut provider is not configured. Please add KCLAUT_API_URL and KCLAUT_API_KEY.' });
+  }
+
   try {
-    const statusResponse = await axios.post(process.env.EXOBOOSTER_API_URL, {
-      key: process.env.EXO_API_KEY,
-      action: 'status',
+    const statusResponse = await axios.post(KCLAUT_API_URL, {
+      key: KCLAUT_API_KEY,
+      action: 'statusorders',
       orders: providerOrderIds.join(','),
     });
 
     const bulkOps = [];
-    for (const providerOrderId in statusResponse.data) {
-      const remoteStatus = statusResponse.data[providerOrderId];
-      if (remoteStatus && remoteStatus.status) {
+    for (const providerOrderId of providerOrderIds) {
+      const rawStatus = statusResponse.data?.[providerOrderId];
+      const remoteStatus = rawStatus?.status || (typeof rawStatus === 'string' ? rawStatus : null);
+      if (remoteStatus) {
         bulkOps.push({
           updateOne: {
-            filter: { providerOrderId: providerOrderId, user: req.user.id },
-            update: { $set: { status: remoteStatus.status } }
+            filter: { providerOrderId, user: req.user.id },
+            update: { $set: { status: remoteStatus } }
           }
         });
       }

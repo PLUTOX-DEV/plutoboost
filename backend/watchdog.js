@@ -9,8 +9,8 @@ import { createLog } from './logger.js';
 dotenv.config();
 
 const {
-  EXOBOOSTER_API_URL,
-  EXO_API_KEY,
+  KCLAUT_API_URL,
+  KCLAUT_API_KEY,
   LOW_BALANCE_THRESHOLD,
   ADMIN_EMAIL
 } = process.env;
@@ -25,11 +25,16 @@ const ADMIN_RECIPIENTS = (process.env.ADMIN_EMAILS || ADMIN_EMAIL || '')
 let isAlertSent = false; // Flag to prevent sending multiple alerts
 
 export async function checkBalanceAndNotify() {
-  await createLog('info', 'Checking Exo Booster balance...', 'watchdog');
+  if (!KCLAUT_API_URL || !KCLAUT_API_KEY) {
+    console.warn('[Watchdog] KCLAUT provider configuration missing. Skipping balance check.');
+    return;
+  }
+
+  await createLog('info', 'Checking KClaut provider balance...', 'watchdog');
 
   try {
-    const response = await axios.post(EXOBOOSTER_API_URL, {
-      key: EXO_API_KEY,
+    const response = await axios.post(KCLAUT_API_URL, {
+      key: KCLAUT_API_KEY,
       action: 'balance'
     });
 
@@ -45,13 +50,21 @@ export async function checkBalanceAndNotify() {
           const subject = '🚨 PlutoBoost Alert: Low Provider Balance';
           const html = `
             <h1>Low Balance Warning</h1>
-            <p>Your Exo Booster balance is low: <strong>${response.data.currency} ${balance}</strong>.</p>
+            <p>Your KClaut provider balance is low: <strong>${response.data.currency} ${balance}</strong>.</p>
             <p>The threshold is set to ${response.data.currency} ${threshold}.</p>
             <p>Please add funds to your provider account to avoid service interruptions.</p>
           `;
-          // Send to all configured admin recipients
-          await sendEmail(ADMIN_RECIPIENTS || ADMIN_EMAIL, subject, html);
-          isAlertSent = true; // Set flag to true after sending
+          try {
+            const recipients = ADMIN_RECIPIENTS || ADMIN_EMAIL;
+            console.log(`[Watchdog] Sending balance alert email to: ${recipients}`);
+            await sendEmail(recipients, subject, html);
+            console.log('[Watchdog] Balance alert email sent successfully.');
+            await createLog('info', `Balance alert email sent to ${recipients}`, 'watchdog');
+            isAlertSent = true;
+          } catch (emailErr) {
+            console.error('[Watchdog] Failed to send balance alert email:', emailErr.message);
+            await createLog('error', `Failed to send balance alert email: ${emailErr.message}`, 'watchdog');
+          }
         } else {
           await createLog('info', 'Low balance alert already sent. Skipping.', 'watchdog');
         }
@@ -62,7 +75,7 @@ export async function checkBalanceAndNotify() {
       await createLog('error', 'Invalid balance response from provider.', 'watchdog');
     }
   } catch (err) {
-    console.error('[Watchdog] Failed to check Exo Booster balance:', err.message);
+    console.error('[Watchdog] Failed to check KClaut provider balance:', err.message);
   }
 }
 
@@ -96,7 +109,17 @@ export async function sendDailyReport() {
       <p>Have a great day!</p>
     `;
 
-    await sendEmail(ADMIN_RECIPIENTS || ADMIN_EMAIL, subject, html);
+    try {
+      const recipients = ADMIN_RECIPIENTS || ADMIN_EMAIL;
+      console.log(`[Watchdog] Sending daily report to: ${recipients}`);
+      await sendEmail(recipients, subject, html);
+      console.log('[Watchdog] Daily report email sent successfully.');
+      await createLog('info', `Daily report email sent to ${recipients}`, 'watchdog');
+    } catch (emailErr) {
+      console.error('[Watchdog] Failed to send daily report email:', emailErr.message);
+      await createLog('error', `Failed to send daily report email: ${emailErr.message}`, 'watchdog');
+      throw emailErr;
+    }
   } catch (err) {
     await createLog('error', `Failed to send daily report: ${err.message}`, 'watchdog');
   }
@@ -118,20 +141,34 @@ export async function updateOrderStatuses() {
 
     const providerOrderIds = activeOrders.map(o => o.providerOrderId);
 
-    const statusResponse = await axios.post(EXOBOOSTER_API_URL, {
-      key: EXO_API_KEY,
-      action: 'status',
+    if (!KCLAUT_API_URL || !KCLAUT_API_KEY) {
+      await createLog('warning', 'KCLAUT provider configuration missing. Skipping order status update.', 'watchdog');
+      return;
+    }
+
+    const statusResponse = await axios.post(KCLAUT_API_URL, {
+      key: KCLAUT_API_KEY,
+      action: 'statusorders',
       orders: providerOrderIds.join(','),
     });
 
     const bulkOps = [];
     for (const providerOrderId in statusResponse.data) {
-      const remoteStatus = statusResponse.data[providerOrderId];
-      if (remoteStatus && remoteStatus.status) {
+      const remoteData = statusResponse.data[providerOrderId];
+      
+      // Handle both formats: { status: "Completed" } or direct string
+      let remoteStatus = null;
+      if (remoteData && typeof remoteData === 'object' && remoteData.status) {
+        remoteStatus = remoteData.status;
+      } else if (typeof remoteData === 'string') {
+        remoteStatus = remoteData;
+      }
+
+      if (remoteStatus) {
         bulkOps.push({
           updateOne: {
             filter: { providerOrderId: providerOrderId },
-            update: { $set: { status: remoteStatus.status } }
+            update: { $set: { status: remoteStatus } }
           }
         });
       }

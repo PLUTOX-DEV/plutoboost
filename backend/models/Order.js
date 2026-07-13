@@ -34,7 +34,7 @@ const OrderSchema = new Schema({
     type: Number,
     required: true,
   },
-  providerOrderId: { type: String }, // To store the ID from ExoBooster
+  providerOrderId: { type: String }, // To store the order ID returned by the provider
   status: {
     type: String,
     enum: ['Pending', 'Processing', 'In Progress', 'Completed', 'Cancelled', 'Failed'],

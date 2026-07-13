@@ -28,8 +28,13 @@ dotenv.config();
 let CALLBACK_FRONTEND_URL = null;
 
 // Startup validation for essential environment variables
-if (!process.env.EXOBOOSTER_API_URL || !process.env.EXO_API_KEY) {
-  console.error("FATAL ERROR: Missing EXOBOOSTER_API_URL or EXO_API_KEY in .env file.");
+const KCLAUT_API_URL = process.env.KCLAUT_API_URL;
+const KCLAUT_API_KEY = process.env.KCLAUT_API_KEY;
+const KCLAUT_TEST_MODE = process.env.KCLAUT_TEST_MODE === 'true';
+const KCLAUT_RATE_UNIT = process.env.KCLAUT_RATE_UNIT || 'per_1000';
+
+if (!KCLAUT_API_URL || !KCLAUT_API_KEY) {
+  console.error("FATAL ERROR: Missing KCLAUT_API_URL or KCLAUT_API_KEY in .env file.");
   process.exit(1);
 }
 
@@ -331,21 +336,73 @@ let servicesCache = {
 };
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
+function parseProviderRate(value) {
+  if (value == null) return NaN;
+  const raw = String(value).trim().toLowerCase();
+  if (!raw) return NaN;
+
+  const withUnitMatch = raw.match(/^([0-9]+(?:\.[0-9]+)?)(k|m)$/i);
+  if (withUnitMatch) {
+    const amount = parseFloat(withUnitMatch[1]);
+    if (Number.isNaN(amount)) return NaN;
+    const unit = withUnitMatch[2].toLowerCase();
+    return unit === 'k' ? amount * 1000 : amount * 1000000;
+  }
+
+  const numeric = parseFloat(raw.replace(/,/g, ''));
+  return Number.isNaN(numeric) ? NaN : numeric;
+}
+
 export async function getServices() {
   const now = Date.now();
   if (servicesCache.data && (now - servicesCache.lastFetched < CACHE_DURATION_MS)) {
     return servicesCache.data;
   }
 
-  const response = await axios.post(process.env.EXOBOOSTER_API_URL, {
-    key: process.env.EXO_API_KEY,
+  const response = await axios.post(KCLAUT_API_URL, {
+    key: KCLAUT_API_KEY,
     action: 'services',
   });
 
-  const services = response.data.map(service => ({
-    ...service,
-    platform: service.category.toLowerCase().split(' ')[0],
-  }));
+  const rawServices = Array.isArray(response.data)
+    ? response.data
+    : Array.isArray(response.data?.data)
+      ? response.data.data
+      : null;
+
+  if (!Array.isArray(rawServices)) {
+    throw new Error('Invalid KClaut service list format');
+  }
+
+  const services = rawServices.map(service => {
+    const rawRateStr = String(service.rate || '').trim();
+    const providerRateRaw = parseProviderRate(service.rate);
+    const rateUnit = /k/i.test(rawRateStr) ? 'per_1000' : KCLAUT_RATE_UNIT;
+    const normalizedRate = Number.isFinite(providerRateRaw)
+      ? (rateUnit === 'per_1000' ? providerRateRaw / 1000 : providerRateRaw)
+      : 0;
+
+    return {
+      provider: 'KCLAUT',
+      providerId: String(service.service),
+      service: String(service.service),
+      id: `KCLAUT_${service.service}`,
+      name: service.name,
+      category: service.category || 'General',
+      type: service.type || '',
+      rate: normalizedRate,
+      providerRate: providerRateRaw,
+      providerRateRaw,
+      rateUnit,
+      min: parseInt(service.min, 10) || 0,
+      max: parseInt(service.max, 10) || 0,
+      refill: service.refill,
+      cancel: service.cancel,
+      platform: service.category || 'General',
+      description: service.description || '',
+      averageTime: service.type || '',
+    };
+  });
 
   servicesCache = { data: services, lastFetched: now };
   return services;
@@ -851,6 +908,25 @@ mongoose.connect(process.env.MONGODB_URI, {
   if (!process.env.VERCEL) {
     app.listen(PORT, () => {
       console.log(`Backend running on http://0.0.0.0:${PORT}`);
+
+        // Start background scheduled tasks
+        console.log('Scheduled order status refresh every 20s');
+        setInterval(async () => {
+          try {
+            await updateOrderStatuses();
+          } catch (err) {
+            console.error('Background order status update error:', err.message);
+          }
+        }, 20000); // Every 20 seconds
+
+        console.log('Scheduled provider balance check every 30 minutes');
+        setInterval(async () => {
+          try {
+            await checkBalanceAndNotify();
+          } catch (err) {
+            console.error('Background balance check error:', err.message);
+          }
+        }, 30 * 60 * 1000); // Every 30 minutes
     });
   } else {
     console.log('Detected Vercel environment; skipping explicit app.listen().');

@@ -299,14 +299,24 @@ router.post('/orders/status', async (req, res) => {
     }
   
     try {
-      const response = await axios.post(process.env.EXOBOOSTER_API_URL, {
-        key: process.env.EXO_API_KEY,
-        action: 'status',
+      const KCLAUT_API_URL = process.env.KCLAUT_API_URL;
+      const KCLAUT_API_KEY = process.env.KCLAUT_API_KEY;
+
+      if (!KCLAUT_API_URL || !KCLAUT_API_KEY) {
+        return res.status(500).json({ error: 'KClaut provider is not configured.' });
+      }
+
+      const response = await axios.post(KCLAUT_API_URL, {
+        key: KCLAUT_API_KEY,
+        action: 'statusorders',
         orders: orderIds.join(','),
       });
-  
+
       for (const orderId in response.data) {
-        await Order.findOneAndUpdate({ providerOrderId: orderId }, { status: response.data[orderId].status });
+        const statusValue = response.data[orderId]?.status || response.data[orderId];
+        if (statusValue) {
+          await Order.findOneAndUpdate({ providerOrderId: orderId }, { status: statusValue });
+        }
       }
       res.json({ success: true, message: 'Statuses updated.' });
     } catch (err) {
@@ -392,16 +402,23 @@ router.get('/system', async (req, res) => {
     const totalRevenue = revenueResult[0]?.total || 0;
     const serverLoad = Math.floor(Math.random() * (75 - 40 + 1)) + 40;
   
-    let exoboosterStatus;
+    let providerStatus;
     try {
-      const response = await axios.post(process.env.EXOBOOSTER_API_URL, {
-        key: process.env.EXO_API_KEY,
+      const KCLAUT_API_URL = process.env.KCLAUT_API_URL;
+      const KCLAUT_API_KEY = process.env.KCLAUT_API_KEY;
+
+      if (!KCLAUT_API_URL || !KCLAUT_API_KEY) {
+        throw new Error('KClaut provider is not configured.');
+      }
+
+      const response = await axios.post(KCLAUT_API_URL, {
+        key: KCLAUT_API_KEY,
         action: 'balance'
       });
-  
+
       if (response.data && response.data.balance != null) {
-        exoboosterStatus = {
-          name: "ExoBooster API",
+        providerStatus = {
+          name: "KClaut API",
           status: "operational",
           icon: "Zap",
           value: "Connected",
@@ -411,9 +428,9 @@ router.get('/system', async (req, res) => {
         throw new Error('Invalid response from provider');
       }
     } catch (err) {
-      console.error('ExoBooster status check error:', err.response?.data || err.message);
-      exoboosterStatus = {
-        name: "ExoBooster API",
+      console.error('KClaut status check error:', err.response?.data || err.message);
+      providerStatus = {
+        name: "KClaut API",
         status: "error",
         icon: "Zap",
         value: "Disconnected",
@@ -435,7 +452,7 @@ router.get('/system', async (req, res) => {
         { name: "API Status", status: "operational", icon: "Server", value: "99.9%", uptime: "30 days" },
         { name: "Database", status: "operational", icon: "Database", value: "Healthy", connections: "247/500" },
         { name: "Server Load", status: "warning", icon: "Cpu", value: "75%", cores: "8/8" },
-        exoboosterStatus,
+        providerStatus,
         { name: "Security", status: "operational", icon: "ShieldCheck", value: "Protected", threats: "0" }
       ],
       controls: { maintenanceMode: await getSetting('maintenanceMode', false) },
