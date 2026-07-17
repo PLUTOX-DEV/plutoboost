@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ShoppingCart, Search, RefreshCw } from "lucide-react";
 import Sidebar from "../components/Sidebar";
@@ -68,7 +68,7 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const fetchOrders = async (search = "") => {
+  const fetchOrders = useCallback(async (search = "") => {
     setLoading(true);
     try {
       const res = await api.get(`/user/orders`, { params: { search } });
@@ -78,11 +78,16 @@ export default function Orders() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+    const interval = setInterval(() => {
+      fetchOrders(searchTerm);
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [fetchOrders, searchTerm]);
 
   const handleSearch = (e) => {
     e.preventDefault();

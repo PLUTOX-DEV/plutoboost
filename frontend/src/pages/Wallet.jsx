@@ -93,6 +93,7 @@ export default function Wallet() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1 });
   const [notification, setNotification] = useState({ show: false, message: '' });
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -125,31 +126,36 @@ export default function Wallet() {
   };
 
   useEffect(() => {
-    // This effect handles Paystack verification redirect parameters.
     const reference = searchParams.get('reference') || searchParams.get('trxref');
-    if (reference) {
-      const verifyPayment = async () => {
-        setNotification({ show: true, message: 'Verifying payment...' });
-        try {
-          const res = await api.post('/paystack/verify', { reference });
-          setBalance(res.data.newBalance);
-          setNotification({ show: true, message: res.data.message, type: 'success' });
-          // After verification, reset to page 1, which will trigger the other useEffect
-          if (pagination.currentPage !== 1) {
-            setPagination(prev => ({ ...prev, currentPage: 1 }));
-          } else {
-            fetchTransactions(1); // Manually refetch if already on page 1
-          }
-        } catch (err) {
-          console.error('Payment verification failed:', err);
-          setNotification({ show: true, message: 'Payment verification failed. Please contact support.', type: 'error' });
+    if (!reference) return;
+
+    const verifyPayment = async () => {
+      setPaymentProcessing(true);
+      setNotification({ show: true, message: 'Payment received. Confirming with Paystack...' });
+
+      try {
+        const res = await api.post('/paystack/verify', { reference });
+        setBalance(res.data.newBalance);
+        setNotification({ show: true, message: res.data.message || 'Payment confirmed!', type: 'success' });
+        if (pagination.currentPage !== 1) {
+          setPagination(prev => ({ ...prev, currentPage: 1 }));
+        } else {
+          fetchTransactions(1);
         }
-        navigate('/wallet', { replace: true });
-        setTimeout(() => setNotification({ show: false, message: '', type: '' }), 4000);
-      };
-      verifyPayment();
-    }
-  }, [searchParams, setBalance, navigate]); // Only depends on verification-related variables
+      } catch (err) {
+        console.error('Payment verification failed:', err);
+        setNotification({ show: true, message: 'Payment is being processed in the background. Your wallet and transactions will update shortly.', type: 'info' });
+        setTimeout(() => fetchTransactions(1), 10000);
+      } finally {
+        setPaymentProcessing(false);
+      }
+
+      navigate('/wallet', { replace: true });
+      setTimeout(() => setNotification({ show: false, message: '', type: '' }), 5000);
+    };
+
+    verifyPayment();
+  }, [searchParams, setBalance, navigate]);
 
   useEffect(() => {
     // This effect fetches transactions whenever the page number changes.

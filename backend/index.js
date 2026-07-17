@@ -59,6 +59,7 @@ async function getSetting(key, defaultValue) {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 // CORS: allow one or more frontend origins configured via env
 // Set `FRONTEND_URLS` to a comma-separated list (e.g. "http://localhost:5173,https://your-site.netlify.app").
 const rawOrigins = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173,https://plutoboost.netlify.app';
